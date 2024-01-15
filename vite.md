@@ -2,13 +2,13 @@
 
 ## Installation
 
-```console
+```
 npm install --save-dev vite
 ```
 
 or <br>
 
-```console
+```
 npm install -D vite
 ```
 
@@ -35,13 +35,13 @@ export default defineConfig({
 
 ## Run Vite
 
-```console
+```
 npx vite
 ```
 
 ## Build
 
-```console
+```
 npx vite build
 ```
 
@@ -112,6 +112,6 @@ export default defineConfig({
 
 A Vite template is a preconfigured Vite project with everything you need to start a new project. These templates typically include basic HTML, CSS, and JavaScript files, as well as customized Vite configuration for a specific framework or library. Vite provides several built-in templates for popular frameworks and libraries, such as React, Vue, Svelte etc. To use the Vite template you can use the command below
 
-```console
+```
 npm create vite@latest
 ```
