@@ -131,3 +131,75 @@ A DocumentSnapshot contains data read from a document in your Firestore database
 ### Query Snapshot
 
 A QuerySnapshot contains zero or more `DocumentSnapshot` objects representing the results of a query. The documents can be accessed as an array via the `docs` property or enumerated using the forEach method. The number of documents can be determined via the `empty` and `size` properties.
+
+## Add and Update Data
+
+### setDoc
+
+```javascript
+import { doc, setDoc } from "firebase/firestore";
+
+// if not exists then will be created new one
+const cityRef = doc(db, "cities", "slmn");
+const city = await setDoc(cityRef, {
+  name: "Sleman",
+  state: "Daerah Istimewa Yogyakarta",
+  country: "Indonesia",
+});
+
+console.log(city); // undefined
+```
+
+If the document does not exist, it will be created. If the document does exist, its contents will be overwritten with the newly provided data, unless you specify that the data should be merged into the existing document, as follows:
+
+```javascript
+await setDoc(
+  cityRef,
+  {
+    capital: false,
+  },
+  { merge: true }
+);
+```
+
+### addDoc
+
+addDoc is similar to setDoc, the difference is, addDoc does not require an ID in the creation process because it has been created automatically by cloud firestore and addDoc will return a DocumentReference while setDoc does not
+
+```javascript
+const city = await addDoc(collection(db, "cities"), {
+  name: "new city",
+  state: "new state",
+  country: "new country",
+});
+
+console.log(city); // DocumentReference;
+```
+
+### updateDoc
+
+```javascript
+import {
+  doc,
+  updateDoc,
+  serverTimestamp,
+  arrayUnion,
+  increment,
+} from "firebase/firestore";
+
+const cityRef = doc(db, "cities", "slmn");
+const city = await updateDoc(cityRef, {
+  state: "Daerah Istimewa Yogyakarta",
+  updatedAt: serverTimestamp(), // serverTimestamp() which tracks when the server receives the update
+
+  // to update nested object use dot notation to prevent overwrite the entire map field
+  "geo.latitude": "-7.7470",
+  "geo.longitude": "110.3756",
+
+  // If your document contains an array field, you can use arrayUnion() and arrayRemove() to add and remove elements
+  regions: arrayUnion("Seyegan"), // add to element if not exists
+  population: increment(1000),
+});
+
+console.log(city); // undefined
+```
