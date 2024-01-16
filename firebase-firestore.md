@@ -203,3 +203,27 @@ const city = await updateDoc(cityRef, {
 
 console.log(city); // undefined
 ```
+
+## Delete Data
+
+### deleteDoc
+
+When you delete a document, Cloud Firestore does not automatically delete the documents within its subcollections. You can still access the subcollection documents by reference. For example, you can access the document at path `/mycoll/mydoc/mysubcoll/mysubdoc` even if you delete the ancestor document at `/mycoll/mydoc`.
+
+```javascript
+import { doc, deleteDoc } from "firebase/firestore";
+
+const cityRef = doc(db, "cities", "deleted");
+const deleted = await deleteDoc(cityRef);
+console.log(deleted);
+```
+
+### deleteField
+
+```javascript
+import { updateDoc, deleteField } from "firebase/firestore";
+
+await updateDoc(cityRef, {
+  capital: deleteField(),
+});
+```
