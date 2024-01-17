@@ -286,3 +286,37 @@ batch.delete(cityRef);
 
 await batch.commit();
 ```
+
+## Read Data
+
+### Get single document
+
+```javascript
+import { doc, getDoc } from "firebase/firestore";
+
+const docRef = doc(db, "cities", "SF");
+const docSnap = await getDoc(docRef); // DocumentSnapshot
+```
+
+### Get all documents
+
+```javascript
+import { getDocs, collection } from "firebase/firestore";
+
+const cities = await getDocs(collection(db, "cities")); // QuerySnapshot
+cities.forEach((city) => {
+  console.log(city.data());
+});
+```
+
+### Get subcollection
+
+```javascript
+import { getDocs, collection } from "firebase/firestore";
+
+// reviews are a subcollection of users
+const userReviews = await getDocs(collection(db, "users/alovelace/reviews")); // setup the correct path
+userReviews.forEach((review) => {
+  console.log(review.data());
+});
+```
