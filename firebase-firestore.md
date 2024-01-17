@@ -227,3 +227,62 @@ await updateDoc(cityRef, {
   capital: deleteField(),
 });
 ```
+
+## Transactions and Batched Writes
+
+### Transactions
+
+Transcation function might run more than once if a concurrent edit affects a document that the transaction reads. The transaction read a document that was modified outside of the transaction. In this case, the transaction automatically runs again. The transaction is retried a finite number of times.
+
+```javascript
+import { doc, runTransaction, udpateDoc } from "firebase/firestore";
+
+const likes = async () => {
+  const postRef = doc(db, "posts", "post1");
+
+  try {
+    const newLikes = await runTransaction(db, async (transaction) => {
+      // Read operations must come before write operations, otherwise the transaction will fail
+      const post = await transaction.get(postRef);
+      if (!post.exists()) {
+        throw new Error("post doesnt exists");
+      }
+
+      const likeCount = post.data().likes + 1;
+      // Simulates documents that are changed outside of the transaction (race condition)
+      if (Math.random() < 0.5) {
+        console.log("external update");
+        await updateDoc(postRef, { likes: likeCount });
+      }
+
+      transaction.update(postRef, { likes: likeCount });
+      return likeCount;
+    });
+
+    console.log(newLikes);
+  } catch (error) {
+    console.log(error);
+  }
+};
+```
+
+### Batched Writes
+
+Different from transactions but having the same function, Batched Writes are used only to write data, not to read data
+
+```javascript
+import { writeBatch, doc } from "firebase/firestore";
+
+const batch = writeBatch(db);
+
+const postRef = doc(db, "posts/post1");
+batch.set(postRef, { title: "Cool Post Title" }, { merge: true });
+
+const userRef = doc(db, "users/user1");
+batch.update(userRef, { money: 5000 });
+
+const cityRef = doc(db, "cities/oIy8jdLavthyGj0qPpk7");
+batch.delete(cityRef);
+
+await batch.commit();
+```
