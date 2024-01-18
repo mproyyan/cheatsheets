@@ -433,3 +433,39 @@ const snapshot = await getAggregateFromServer(coll, {
   averagePopulation: average("population"),
 });
 ```
+
+### Pagination
+
+Use the `startAt()` or `startAfter()` methods to define the start point for a query. The `startAt()` method includes the start point, while the `startAfter()` method excludes it. For example, if you use `startAt(A)` in a query, it returns the entire alphabet. If you use `startAfter(A)` instead, it returns `B-Z`.
+
+```javascript
+import { collection, orderBy, query startAfter, limit, getDocs } from "firebase/firestore"
+
+const paginate = async (cursor) => {
+  const citiesRef = collection(db, "cities");
+  let q = query(citiesRef, orderBy("population"), limit(2));
+  if (typeof cursor !== "undefined") {
+    console.log("page changed");
+    q = query(citiesRef, orderBy("population"), startAfter(cursor), limit(2));
+  }
+
+  const cities = await getDocs(q);
+  cities.forEach((city) => {
+    console.log(city.data());
+  });
+
+  // DocumentSnapshot can be query cursor
+  const nextCursor = cities.docs[cities.docs.length - 1];
+  console.log(nextCursor);
+  return nextCursor;
+};
+
+const runPagination = async () => {
+  try {
+    const cursor = await paginate();
+    paginate(cursor);
+  } catch (error) {
+    console.log(error);
+  }
+};
+```
