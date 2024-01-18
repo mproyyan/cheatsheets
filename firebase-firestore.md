@@ -320,3 +320,73 @@ userReviews.forEach((review) => {
   console.log(review.data());
 });
 ```
+
+### Query
+
+#### Query operators
+
+```javascript
+const q = query(reference, whereConditions));
+```
+
+The `where()` method takes three parameters: a field to filter on, a comparison operator, and a value. Cloud Firestore supports the following comparison operators:
+
+- `<` less than
+- `<=` less than or equal to
+- `==` equal to
+- `>` greater than
+- `>=` greater than or equal to
+- `!=` [not equal to](https://firebase.google.com/docs/firestore/query-data/queries#not_equal)
+- [array-contains](https://firebase.google.com/docs/firestore/query-data/queries#array_membership)
+- [array-contains-any](https://firebase.google.com/docs/firestore/query-data/queries#in_and_array-contains-any)
+- [in](https://firebase.google.com/docs/firestore/query-data/queries#in_and_array-contains-any)
+- [not-in](https://firebase.google.com/docs/firestore/query-data/queries#in_and_array-contains-any)
+
+#### Using query
+
+```javascript
+import { collection, query, where, getDocs } from "firebase/firestore";
+
+const citiesRef = collection(db, "cities");
+const q = query(citiesRef, where("capital", "==", true));
+const cities = await getDocs(q);
+cities.forEach((city) => {
+  console.log(city.data());
+});
+```
+
+#### Compound
+
+```javascript
+import { query, where } from "firebase/firestore";
+
+// and
+const q1 = query(
+  citiesRef,
+  where("state", "==", "CO"),
+  where("name", "==", "Denver")
+);
+```
+
+```javascript
+import { query, or, where } from "firebase/firestore";
+
+// or
+const q = query(
+  citiesRef,
+  or(where("capital", "==", true), where("population", ">=", 1000000))
+);
+```
+
+```javascript
+import { query, collection, and, where, or } from "firebase/firestore";
+
+// and with or
+const q = query(
+  collection(db, "cities"),
+  and(
+    where("state", "==", "CA"),
+    or(where("capital", "==", true), where("population", ">=", 1000000))
+  )
+);
+```
