@@ -390,3 +390,46 @@ const q = query(
   )
 );
 ```
+
+### Order and Limit
+
+```javascript
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+} from "firebase/firestore";
+
+const citiesRef = collection(db, "cities");
+// ascending will be the default value of orderBy if not specified
+const q = query(
+  citiesRef,
+  where("population", ">", 100000),
+  orderBy("population", "desc"),
+  limit(2)
+);
+const cities = await getDocs(q);
+```
+
+### Aggregation
+
+```javascript
+import {
+  collection,
+  getAggregateFromServer,
+  count,
+  sum,
+  average,
+} from "firebase/firestore";
+
+const coll = collection(db, "cities");
+// AggregateQuerySnapshot
+const snapshot = await getAggregateFromServer(coll, {
+  countOfDocs: count(),
+  totalPopulation: sum("population"),
+  averagePopulation: average("population"),
+});
+```
