@@ -469,3 +469,59 @@ const runPagination = async () => {
   }
 };
 ```
+
+### Real time updates
+
+To listen for changes to the database, use the `onSnapshot()` method, this method will be called automatically if there are changes to the associated document. This method will return the `unsub` method which is used to stop listening for database changes. You can also include an error callback in the 3rd parameter
+
+#### Listen to single document
+
+```javascript
+import { onSnapshot, doc } from "firebase/firestore";
+
+const unsub = onSnapshot(
+  doc(db, "users/user1"),
+  (doc) => {
+    // Retrieved documents have a metadata.hasPendingWrites property that indicates whether the document has local changes that haven't been written to the backend yet
+    // This is because of an important feature called "latency compensation."
+    // When you perform a write, your listeners will be notified with the new data before the data is sent to the backend.
+    const source = doc.metadata.hasPendingWrites ? "local" : "server";
+    console.log(source, " data: ", doc.data());
+  },
+  (error) => {
+    // error callback
+    console.log(error);
+  }
+);
+
+// call the unsub method to stop listening for changes
+unsub();
+```
+
+#### Listen to multiple documents
+
+```javascript
+import { query, collection, where, onSnapshot } from "firebase/firestore";
+
+const q = query(collection(db, "cities"), where("state", "==", "CA"));
+onSnapshot(q, (docs) => {
+  docs.docChanges().forEach((change) => {
+    if (change.type === "added") {
+      console.log("New city: ", change.doc.data());
+    }
+    if (change.type === "modified") {
+      console.log("Modified city: ", change.doc.data());
+    }
+    if (change.type === "removed") {
+      console.log("Removed city: ", change.doc.data());
+    }
+  });
+
+  const cities = [];
+  docs.forEach((doc) => {
+    cities.push(doc.data().name);
+  });
+
+  console.log("Current cities in CA: ", cities.join(", "));
+});
+```
