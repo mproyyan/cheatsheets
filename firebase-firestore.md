@@ -525,3 +525,156 @@ onSnapshot(q, (docs) => {
   console.log("Current cities in CA: ", cities.join(", "));
 });
 ```
+
+## Security Rules
+
+Security rules will consist of defining what specific documents you secure and what logic you use to secure them. Security rules can be bypassed via server side apps such as Go, NodeJS, Python etc. This can be prevented by implementing [IAM](https://cloud.google.com/firestore/docs/security/iam)
+
+### Nested rules
+
+Even though it can be nested, the rules applied to the parent will not affect the child because it has a different path, unless you use wildcards `=**`
+
+```javascript
+service cloud.firestore {
+  match /database/{database}/documents {
+    // path = users/123
+    match /users/{userID} {
+      allow read, write
+
+      // path = users/123/reviews/456
+      match  /reviews/{reviewID} {
+        allow read
+      }
+
+      // path = users/123/private-data/456
+      match /private-data/{privateDoc} {
+        allow read
+      }
+    }
+  }
+}
+```
+
+### Wildcard
+
+#### Single element
+
+```javascript
+match /users/{userID} {
+  // userID = The ID of the user doc
+  match /reviews/{reviewID} {
+    // reviewID = The ID of the review doc
+    // you can use userID in child
+  }
+}
+```
+
+#### Catch all
+
+Please be careful when using this wildcard because it will affect access on other paths
+
+```javascript
+match /{document=**} {
+  // document can match anything path
+  // example
+  // users/123
+  // users/123/reviews/456
+}
+```
+
+### Request
+
+This object contains information from incoming requests
+
+#### Auth
+
+The auth object contains information about the logged in user
+
+```javascript
+// token is JWT claim object
+match /myCollection/{docID} {
+  allow read: if request.auth != null &&
+    request.auth.token.email_verified
+}
+```
+
+#### Resource
+
+Resource objects refer to objects that represent documents to be written or updated in the database. The actual content is in `request.resource.data`, this object contains data that will be sent or updated by the user through operations such as creating a new document or updating an existing document.
+
+```javascript
+match /reviews/{reviewID} {
+  allow create: if request.resource.data.score is number &&
+    request.resource.data.score >= 1 &&
+    request.resource.data.score <= 5 &&
+    request.resource.data.review is string &&
+    request.resource.data.review.size() > 20 &&
+    request.resource.data.review.size() <=1000;
+}
+```
+
+### Resource
+
+Different from the `request.resource` object, the resource object refers to an object that represents a document that already exists in the database
+
+```javascript
+match /reviews/{reviewID} {
+  allow update: if request.resource.data.score is number &&
+    request.resource.data.score >= 1 &&
+    request.resource.data.score <= 5 &&
+    request.resource.data.review is string &&
+    request.resource.data.review.size() > 20 &&
+    request.resource.data.review.size() <=1000 &&
+    // only the author can edit his own review
+    resource.data.reviewerID == request.auth.uid &&
+    // cant change the score
+    request.resource.data.score == resource.data.score
+}
+```
+
+### Arbritrary document
+
+Arbitrary document refers to any document that may exist in the database. Sometimes you need to evaluate and apply rules to these documents in general, without regard to the specific structure or content of the document. For example, you might want to check whether the document exists or whether the user has certain access permissions to the document. This often involves using built-in functions such as `exists` or `get` to check if a document exists or get the document
+
+```javascript
+match /restaurants/{restaurantID} {
+  // The dollar sign indicates that you will use a variable
+  allow update: if get(/database/$(database)/documents/restaurants/$(restaurantID)/private_data/private).data.roles[request.auth.uid] == "editor";
+}
+```
+
+### Function
+
+Functions are used to help organize and abstract the logic of your security rules. This function allows you to understand the logic of security rules in a more structured form, making security rules easier to read, understand, and maintain.
+
+```javascript
+match /reviews/{reviewID} {
+  function resourceScoreIsValid() {
+    return request.resource.data.score is number &&
+      request.resource.data.score >= 1 &&
+      request.resource.data.score <= 5;
+  }
+
+  function resourceReviewIsValid() {
+    return request.resource.data.review is string &&
+      request.resource.data.review.size() > 20 &&
+      request.resource.data.review.size() <=1000;
+  }
+
+  function resourceStateFieldIsValid() {
+    return request.resource.data.state in ["draft", "published"]
+  }
+
+  function resourceIsValidReview() {
+    return resourceScoreIsValid() &&
+      resourceReviewIsValid() &&
+      resourceStateFieldIsValid();
+  }
+
+  allow create: if resourceIsValidReview();
+
+  allow update: if resourceIsValidReview() &&
+    resource.data.reviewerID == request.auth.uid &&
+    request.resource.data.score == resource.data.score;
+}
+```
