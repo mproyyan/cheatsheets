@@ -156,3 +156,33 @@ To bind mount use `--mount “type=bind,source=folder,destination=folder,readonl
 ```bash
 docker container create --name mysqlcont --mount "type=bind,source=/home/roy/mysql,destination=/var/lib/mysql" --env MYSQL_ROOT_PASSWORD=root --publish 3306:3306 mysql:latest
 ```
+
+### Volume
+
+Docker Volumes are similar to Bind Mounts, the difference is that there is Volume management, where we can create Volumes, view the Volume list, and delete Volumes. Volume itself can be considered storage used to store data, the difference is with Bind Mounts, in bind mounts, the data is stored on the host system, whereas in volumes, the data is stored on the host system managed by Docker
+
+#### List volume
+
+```bash
+docker volume ls
+```
+
+#### Create volume
+
+```bash
+# docker volume create <volumename>
+docker volume create mysqlvol
+```
+
+#### Remove volume
+
+```bash
+# docker volume rm <volumename>
+docker volume rm mysqlvol
+```
+
+#### Bind volume
+
+```bash
+docker container create --name mysqlcont --mount "type=volume,source=mysqlvol,destination=/var/lib/mysql" --env MYSQL_ROOT_PASSWORD=root --publish 3306:3306 mysql:latest
+```
