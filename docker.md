@@ -186,3 +186,55 @@ docker volume rm mysqlvol
 ```bash
 docker container create --name mysqlcont --mount "type=volume,source=mysqlvol,destination=/var/lib/mysql" --env MYSQL_ROOT_PASSWORD=root --publish 3306:3306 mysql:latest
 ```
+
+### Network
+
+Network allows containers to communicate with each other within an isolated network. With Docker Network, you can create a dedicated network for your container groups so they can communicate without having direct exposure to outside networks or hosts
+
+#### List network
+
+```bash
+docker network ls
+```
+
+#### Create network
+
+```bash
+# docker network create --driver <driver> <network-name>
+# driver : bridge, host, none
+
+docker network create --driver bridge mynetwork
+```
+
+#### Remove network
+
+```bash
+# docker network rm <network-name>
+docker network rm mynetwork
+```
+
+### Container network
+
+We can insert a container into the network so that the container can access other containers by specifying the hostname of the container, namely the name of the container
+
+#### Create container with network
+
+Use `--network <network-name>`
+
+```bash
+docker container create --name nginxcont --network mynetwork nginx:latest
+```
+
+#### Remove container from network
+
+```bash
+# docker network disconect <network-name> <container-name>
+docker network disconect mynetwork nginxcont
+```
+
+#### Add already exists container to network
+
+```bash
+# docker network connect <network-name> <container-name>
+docker network connect mynetwork nginxcont
+```
