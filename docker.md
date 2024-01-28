@@ -139,3 +139,20 @@ docker container create --name rediscont redis:latest --memory 100m
 ```bash
 docker container create --name rediscont redis:latest --cpus 0.5
 ```
+
+### Bind mount
+
+Bind mounts allow you to bind directories or files from the host system into a container running using Docker. This feature is very useful when, for example, we want to send configurations from outside the container, or for example, store data created in an application in a container into a folder on the host system (sharing). <br>
+
+To bind mount use `--mount “type=bind,source=folder,destination=folder,readonly”`
+
+| Parameter   | Description                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------- |
+| type        | bind or volume                                                                           |
+| source      | The location of the file or folder on the host system                                    |
+| destination | The location of the file or folder in the container                                      |
+| readonly    | If there is, then the file or folder can only be read in the container, can't be written |
+
+```bash
+docker container create --name mysqlcont --mount "type=bind,source=/home/roy/mysql,destination=/var/lib/mysql" --env MYSQL_ROOT_PASSWORD=root --publish 3306:3306 mysql:latest
+```
