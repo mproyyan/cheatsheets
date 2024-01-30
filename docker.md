@@ -507,3 +507,326 @@ WORKDIR /app
 COPY --from=builder /app/main .
 ENTRYPOINT [ "/app/main" ]
 ```
+
+## Docker Compose [🔗](https://docs.docker.com/compose/compose-file/compose-file-v3)
+
+Docker Compose is a tool that allows you to define and run multi-container Docker applications using simple YAML configuration files.
+
+### Difference between command `up` and `start`
+
+| docker compose `up`                                                                                                                                                                                                                                                                                                                 | docker compose `start`                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Builds any missing images**: If the image defined for a service in your `docker-compose.yml` doesn't exist, this command builds it first.                                                                                                                                                                                         | **Assumes images are already built**: It doesn't attempt to build any missing images. If an image doesn't exist for a service, the command will fail.                                                                                                        |
+| **(Re)creates containers**: It checks for existing containers for each service. If none exist, it creates new ones. If existing containers already run, it checks for configuration changes in the `docker-compose.yml` file. If any changes are present, it stops and recreates the containers (while preserving mounted volumes). | **Only starts existing containers**: This command ignores the configuration in your `docker-compose.yml` file and simply starts any existing containers for the defined services. It won't rebuild or recreate containers even if the configuration changes. |
+| **Starts all services**: It starts all defined services and any linked services, even if they were already running.                                                                                                                                                                                                                 | **Doesn't start linked services**: Unlike `up`, this command only starts the explicitly targeted services and doesn't automatically start any linked services.                                                                                               |
+
+#### Summary
+
+- Use `docker compose up` for a fresh start, building missing images, recreating containers with updated configurations, and starting all services.
+- Use `docker compose start` to quickly resume already built and configured services without rebuilding or affecting existing containers.
+
+### Difference between command `down` and `stop`
+
+| docker compose `down`                                                                                                                                                                                                            | docker compose `stop`                                                                                                                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stops and removes containers**: It stops all running containers, similar to stop, but then also removes them from your system.                                                                                                 | **Stops running containers**: It gracefully stops all running containers defined in your `docker-compose.yml` file and any linked services.                                |
+| **Deletes associated resources**: This includes removing networks created by Compose and any anonymous volumes attached to the containers. However, named volumes and volumes mounted from the host are not affected.            | **Preserves containers and data**: The stopped containers remain on your system. Their data and state are preserved, allowing you to restart them later in the same state. |
+| **Requires rebuilding on starting again**: If you run `docker compose up` after using `down`, the images for your services will be downloaded or built again, and new containers will be created using the latest configuration. | **Networks remain**: Any networks created by Compose remain intact.                                                                                                        |
+
+#### Summary
+
+- Use `docker compose stop` to temporarily pause your application without losing data or state. This is useful for maintenance or debugging tasks.
+- Use `docker compose down` to completely shut down your application and clean up associated resources. This is useful for when you're finished working with your application or want to start from scratch with a fresh environment.
+
+### Service
+
+Services are used to define the configuration list of containers that you want to run
+
+```yml
+version: "3.8"
+
+services:
+  database: # service name
+    container_name: mysqlcont
+    image: mysql:latest
+
+  server: # service name
+    container_name: nginxcont
+    image: nginx:latest
+# In the example above we create 2 services
+```
+
+### Container
+
+After defining the service in `docker-compose.yml`, we will use that file to manipulate containers such as creating, running, deleting, etc.
+
+#### Create container
+
+If the service is not defined it will create all the services in `docker-compose.yml`. use the `-f path/to/compose-file` parameter to select the `docker-compose.yml` file, if not included it will select the location where the same command is called
+
+```bash
+# docker compose create [SERVICE ...]
+docker compose create
+```
+
+#### Running container
+
+```bash
+# docker compose start [SERVICE ...]
+docker compose start
+```
+
+#### List container
+
+This command only lists containers created via `docker-compose.yml`
+
+```bash
+# docker compose ps
+docker compose ps
+```
+
+#### Stop container
+
+```bash
+# docker compose stop [OPTIONS] [SERVICE ...]
+docker compose stop
+```
+
+#### Remove container
+
+```bash
+# docker compose down [OPTIONS] [SERVICE ...]
+docker compose down
+```
+
+### Project name
+
+By default the project name is the name of the folder where the docker-compose.yml file is located. To see a list of ongoing projects, we can use the command:
+`docker compose ls`
+
+### Port
+
+```yml
+services:
+  database:
+    container_name: mysqlcont
+    image: mysql:latest
+    ports: # short syntax
+      - "3306:3306"
+
+  server:
+    container_name: nginxcont
+    image: nginx:latest
+    ports: # long syntax
+      - protocol: tcp
+        published: 80
+        target: 8080
+```
+
+### Environment variable
+
+```yml
+services:
+  database:
+    container_name: mysqlcont
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD: root
+```
+
+### Bind mount
+
+```yml
+services:
+  database:
+    container_name: mysqlcont
+    image: mysql:latest
+    volumes: # SOURCE:DESTINATION[:MODE: ro, rw]
+      - "/home/roy/mysql:/var/lib/mysql"
+
+  server:
+    container_name: nginxcont
+    image: nginx:latest
+    volumes: # long syntax
+      - type: bind
+        source: /home/roy/nginx
+        target: /etc/nginx/templates
+        read_only: false
+```
+
+### Volume
+
+#### Create volume
+
+```yml
+volumes:
+  mysqlvol:
+    name: mysqlvol
+
+  nginxvol:
+    external: true # use already created volume
+```
+
+#### Bind volume
+
+```yml
+services:
+  database:
+    container_name: mysqlcont
+    image: mysql:latest
+    volumes: # SOURCE:DESTINATION[:MODE: ro, rw]
+      - "mysqlvol:/var/lib/mysql"
+
+  server:
+    container_name: nginxcont
+    image: nginx:latest
+    volumes: # long syntax
+      - type: volume
+        source: nginxvol
+        target: /etc/nginx/templates
+        read_only: false
+```
+
+### Network
+
+When we run a file using Docker Compose, by default all containers will be connected in a Network called `<project-name>_default`
+
+#### Create network
+
+```yml
+networks:
+  mynetwork:
+    name: mynetwork
+    driver: bridge
+```
+
+#### Using network
+
+```yml
+services:
+  database:
+    container_name: mysqlcont
+    image: mysql:latest
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD: root
+    networks:
+      - mynetwork
+```
+
+### Depends on
+
+```yml
+services:
+  nginx-server:
+    container_name: nginx-server
+    image: nginx:alpine
+    depends_on:
+      - pqdb
+
+  pqdb:
+    container_name: postgres-db
+    image: postgres:11.22-alpine3.18
+    environment:
+      - POSTGRES_PASSWORD=mimin
+```
+
+### Restart
+
+```yml
+services:
+  server:
+    container_name: nginxcont
+    image: nginx:latest
+    restart: always
+    # no: default
+    # always: always restarts if the container stops, but if it is stopped manually, it will restart immediately the first time docker restarts
+    # on-failure: restart if the container errors with an error indication when exiting
+    # unless-stopped: always restart the container, except when stopped manually
+```
+
+### Resource limit
+
+```yml
+services:
+  server:
+    container_name: nginxcont
+    image: nginx:latest
+    deploy:
+      resources:
+        reservations: # minimum given
+          cpus: "0.25"
+          memory: 50m
+        limits: # maximum given
+          cpus: "0.50"
+          memory: 100m
+```
+
+### Build
+
+Previously we used images to determine which image we wanted to use, but we can also use a Dockerfile
+
+```yml
+services:
+  database:
+    container_name: mysqlcont
+    build: .
+
+  server:
+    container_name: nginxcont
+    build:
+      context: ./docks
+      dockerfile: Dockerfile.development
+```
+
+If you specify `image` as well as `build`, then Compose names the built image with the webapp and optional tag specified in image. The results is an image named `webapp` and tagged `tag`, built from `./dir`.
+
+```yml
+build: ./dir
+image: webapp:tag
+```
+
+### Merge
+
+We can merge 2 or more compose files, the compose file mentioned most recently will overwrite the previous configuration. Merge means actually combining the compose files (all configurations) into one unit
+
+```bash
+# docker-compose.dev.yml will overwrite previous configurations with the same attributes
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+### Extends
+
+Extends are similar to merge but Extends are more specific to services, Extends do not combine all configurations like merge. Extends are used to share configuration with other services
+
+> **Note**: `depends_on` cannot be used using Extends, use merge instead
+
+```yml
+# common-service.yml
+services:
+  webapp:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - "/data"
+```
+
+```yml
+# docker-compose.yml
+services:
+  web:
+    extends:
+      file: common-services.yml
+      service: webapp
+    environment:
+      - DEBUG=1
+    cpu_shares: 5
+
+  important_web:
+    extends: web
+    cpu_shares: 10
+```
